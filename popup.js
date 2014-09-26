@@ -1,43 +1,29 @@
-// Copyright (c) 2012 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
 
 /**
- * Javascript implementation of Java's hashCode function
+ * PassHash > popup.js
+ * Written by Victor Davis Sep 2014
+ * Contact VictorAlynDavis@gmail.com
+ * 
+ * This is the file that pops up when the user activates the extension to interact with it.
  */
-String.prototype.hashCode = function(){
-    var hash = 0;
-    if (this.length == 0) return hash;
-    for (i = 0; i < this.length; i++) {
-        char = this.charCodeAt(i);
-        hash = ((hash<<5)-hash)+char;
-        hash = hash & hash; // Convert to 32bit integer
-    }
-    return hash;
-}
 
-/* backwards compatibility */
-if (!chrome.runtime) {
-    // Chrome 20-21
-    chrome.runtime = chrome.extension;
-} else if(!chrome.runtime.onMessage) {
-    // Chrome 22-25
-    chrome.runtime.onMessage = chrome.extension.onMessage;
-    chrome.runtime.sendMessage = chrome.extension.sendMessage;
-    chrome.runtime.onConnect = chrome.extension.onConnect;
-    chrome.runtime.connect = chrome.extension.connect;
-}
 
 var pass = {
   /**
-   * 16-digit random password
+   * Converts hexadecimal to base64
+	 * Credit: http://stackoverflow.com/questions/23190056/hex-to-base64-converter-for-javascript
    */
   HexToBase64: function(string) {
 		return btoa(string.match(/\w{2}/g).map(function(a){return String.fromCharCode(parseInt(a,16));}).join(""));
 	},
 	
   /**
-   * The algorithm
+   * The algorithm:
+	 * (1) Append the site & phrase with a vertical bar, like "facebook | hello world"
+	 * (2) Hash using SHA256 (separate downloaded file)
+	 * (3) Convert hexed output to base64
+	 * (4) Use only the first 16 characters (some websites set upper limits on length)
+	 * Results in a 64x16= 1024-bit password
    */
   hash: function() {
 		// get phrase & site
@@ -45,12 +31,19 @@ var pass = {
     var site = document.getElementById("hash_site").value;
 		var plaintext = phrase + ' ' + site;
 		
+		// hash away
 		var ciphertext = SHA256(plaintext);
 		ciphertext = this.HexToBase64(ciphertext);
 		ciphertext = ciphertext.substring(0,16);
+		
+		// display result
 		document.getElementById("hash_result").innerHTML = ciphertext;
   },
   
+	/**
+	 * When user clicks on the result, send ciphertext down to the content script,
+	 * and initialize all inputs
+	 */
   insert: function(word) {
 		//console.log('sending password "'+word+'" to background...');
 		chrome.extension.sendMessage({pass:word}, function(response){
@@ -63,26 +56,34 @@ var pass = {
 	}
 };
 
+/**
+ * On load, add listeners
+ * 
+ */
 document.addEventListener('DOMContentLoaded', function() {
+	
+	// refresh output at every keystroke, the algorithm is plenty fast, no need for a "submit" button
 	var hash_click = document.getElementById('hash_phrase');
 	hash_click.addEventListener('keyup', function() {
 		pass.hash();
 	});
 
+	// make the result text clickable, click to insert, again, saving a button
 	var hash_insert = document.getElementById('hash_insert');
 	hash_insert.addEventListener('click', function() {
 		var word = document.getElementById("hash_result").innerHTML;
 		pass.insert(word);
 	});
 	
+	// retrieve website / domain ("facebook"/"facebook.com") from local storage
 	var hash_site = document.getElementById('hash_site');
 	var hash_phrase = document.getElementById('hash_phrase');
-	
 	chrome.storage.sync.get(['site','domain'], function (result) {
 		//console.log(result);
 		site = result.site;
 		domain = result.domain;
 		
+		// populate inputs
 		hash_site.value = site+' | ';
 		hash_site.size = site.length;
 		hash_phrase.size = 24 - site.length;

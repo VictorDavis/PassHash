@@ -2,14 +2,6 @@
 <html>
   <head>
     <title>PassHash</title>
-
-    <!--
-      - JavaScript and HTML must be in separate files: see our Content Security
-      - Policy documentation[1] for details and explanation.
-      -
-      - [1]: http://developer.chrome.com/extensions/contentSecurityPolicy.html
-      - http://www.menucool.com/tooltip/css-tooltip
-     -->
     <script src="sha256.js"></script>
     <script src="popup.js"></script>
     <style>
@@ -46,10 +38,12 @@
   </head>
   <body>
 		<div id="din">
+			<!-- two inputs styled to look like one -->
 			<input type="text" id="hash_site" disabled>
 			<input type="text" id="hash_phrase" placeholder="Enter Passphrase...">
 		</div>
 		<div style="text-align:center">
+			<!-- clickable text instead of "insert" button -->
 			<a href="#" id="hash_insert"><code id="hash_result"></code></a>
     </div>
   </body>
