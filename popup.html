@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <title>PassHash</title>
+
+    <!--
+      - JavaScript and HTML must be in separate files: see our Content Security
+      - Policy documentation[1] for details and explanation.
+      -
+      - [1]: http://developer.chrome.com/extensions/contentSecurityPolicy.html
+      - http://www.menucool.com/tooltip/css-tooltip
+     -->
+    <script src="sha256.js"></script>
+    <script src="popup.js"></script>
+    <style>
+    body {
+			margin: 0;
+			font-family: "Courier New", Courier, monospace;
+    }
+    *:focus {
+			outline: none;
+		}
+    #din input{
+			display:table-cell;
+			border-width: 1px 0 ;
+			background-color: white;
+			color: black;
+		}
+		#din input:first-child{
+			border-width: 1px 0 1px 1px;
+			text-align: right;
+		}
+		#din input:last-child{
+			border-width: 1px 1px 1px 0; 
+			margin-left:-12px;
+		}
+		a{
+			text-decoration: none;
+			color: black;
+		}
+		a:hover{
+			border-width: 1px;
+			color: #202020;
+		}
+    </style>
+  </head>
+  <body>
+		<div id="din">
+			<input type="text" id="hash_site" disabled>
+			<input type="text" id="hash_phrase" placeholder="Enter Passphrase...">
+		</div>
+		<div style="text-align:center">
+			<a href="#" id="hash_insert"><code id="hash_result"></code></a>
+    </div>
+  </body>
+</html>
+

@@ -1,0 +1,31 @@
+{
+  "manifest_version": 2,
+
+  "name": "PassHash",
+  "description": "This extension generates passwords for you based on a hash.",
+  "version": "1.0",
+
+  "browser_action": {
+    "default_icon": "icon.png"
+  },
+  "permissions": [
+		"tabs",
+		"storage"
+	],
+  "background": {
+    "scripts": ["background.js", "sha256.js"]
+  },
+  "content_scripts": [
+        {
+        "matches": [
+            "http://*/*",
+            "https://*/*"
+            ],
+        "js": ["jquery-1.11.1.min.js", "jquery.qtip.min.js", "contentscript.js"],
+        "css": ["jquery.qtip.css"],
+        "run_at": "document_end",
+        "all_frames": true
+        }
+    ],
+   "web_accessible_resources": ["icon.png", "popup.html"]
+}
