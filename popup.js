@@ -29,7 +29,7 @@ var pass = {
 		// get phrase & site
     var phrase = document.getElementById("hash_phrase").value;
     var site = document.getElementById("hash_site").value;
-		var plaintext = phrase + ' ' + site;
+		var plaintext = site + phrase;
 		
 		// hash away
 		var ciphertext = SHA256(plaintext);
@@ -87,9 +87,21 @@ document.addEventListener('DOMContentLoaded', function() {
 		hash_site.value = site+' | ';
 		hash_site.size = site.length;
 		hash_phrase.size = 24 - site.length;
-		hash_site.style.backgroundImage = "url('https://www.google.com/s2/favicons?domain="+domain+"')";
+		// https://www.google.com/s2/favicons?domain=www.[] misses github
+		// https://plus.google.com/_/favicon?domain=www.[] misses twitter
+		var iconsrc = "https://plus.google.com/_/favicon?domain="+domain;
+		hash_site.style.backgroundImage = "url('"+iconsrc+"')";
 		hash_site.style.paddingLeft = "20px";
 		hash_site.style.backgroundRepeat = "no-repeat";
 	});
 	
+	document.getElementById("hash_phrase").focus();
+});
+
+document.addEventListener('keydown', function(e) {
+	var key = e.keyCode;
+	if (key == 13) {
+		var word = document.getElementById("hash_result").innerHTML;
+		pass.insert(word);
+	}
 });

@@ -15,6 +15,23 @@
  */
 activePass = null;
 
+/*
+ * extracts simple domain name, ignoring .com, .net, and subdomains www. etc
+ * and sends it to background for inter-extension storage
+ */
+function saveDomain() {
+	
+	// ex facebook google homedepot, and write to background local storage
+	var site = document.domain.toLowerCase().match("([a-z]*)\.[a-z]*$");
+	
+	//console.log('sending domain "'+site[0]+'" to background...');
+	chrome.storage.sync.set(
+	  { 'site': site[1], 'domain':site[0] },
+	  function() {
+		// Notify that we saved.
+	});
+}
+
 /**
  * Runs on DOM load. Also runs when user clicks the icon in the upper right.
  * Scans the page for password input fields and iconifies each by inserting 
@@ -58,9 +75,10 @@ function sweep() {
 			
 			// create clickable image to far right of field
 			img = document.createElement("img");
-			img.src = chrome.extension.getURL("icon.png");
-			img.height = passlist[i].offsetHeight;
+			img.src = chrome.extension.getURL("icon128.png");
 			img.className = "passhash";
+			img.height = passlist[i].offsetHeight;
+			img.style.height = passlist[i].offsetHeight+'px';
 			img.style.position = "absolute";
 			img.style.top = "0px";
 			img.style.zIndex = 3;
@@ -75,6 +93,16 @@ function sweep() {
 			
 			// accurately set the positioning
 			img.style.left = (passlist[i].offsetWidth + passlist[i].offsetLeft - passlist[i].offsetHeight)+"px";
+			img.style.top = (passlist[i].offsetTop)+"px";
+			
+			// use Alt+H to open qtip
+			passlist[i].addEventListener('keyup', function(e) {
+				if (e.altKey & (e.keyCode == 72)) {
+					activePass = this;
+					saveDomain();
+					this.parentElement.getElementsByTagName("img")[0].click();
+				}
+			});
 			
 			// not a link! create click function for icon
 			// When icon is clicked, write the website name to local storage,
@@ -86,18 +114,13 @@ function sweep() {
 				activePass = this.parentElement.getElementsByTagName("input")[0];
 				//console.log(activePass);
 				
-				// extracts simple domain name, ignoring .com, .net, and subdomains www. etc
-				// ex facebook google homedepot, and write to background local storage
-				var site = document.domain.toLowerCase().match("([a-z]*)\.[a-z]*$");
-				//console.log('sending domain "'+site[0]+'" to background...');
-				chrome.storage.sync.set({'site': site[1], 'domain':site[0]}, function() {
-					// Notify that we saved.
-					//console.log('Settings saved: '+site[0]);
-				});
+				// save domain name to background
+				saveDomain();
 			}
 			
 			// create content for the popup
 			iframe = document.createElement("iframe");
+			iframe.id = "ifpopup";
 			iframe.src = chrome.extension.getURL("popup.html");
 			iframe.height = "42px";
 			iframe.width = "100%";
@@ -116,6 +139,9 @@ function sweep() {
 				},
 				hide: {
 					event: 'nonexisting' /* wait for programmatic close */
+				},
+				events: {
+					visible : function() { /* focus on input? */ }
 				},
 				style: {
 					width: "400px",
@@ -148,6 +174,8 @@ chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
 		
 		// disappear qtip after insert
 		$('.passhash').qtip("hide");
+		activePass.focus();
+		
   } else if (msg.action == 'sweep') {
 		sweep();
 	}
