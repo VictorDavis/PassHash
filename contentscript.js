@@ -24,9 +24,20 @@ function saveDomain() {
 	// ex facebook google homedepot, and write to background local storage
 	var site = document.domain.toLowerCase().match("([a-z]*)\.[a-z]*$");
 	
+	// get icon too (those favicon services just don't work
+	icon = "";
+	var link = document.getElementsByTagName("link");
+	for (var i = 0; i < link.length; i++) {
+		if ( (link[i].hasAttribute("rel"))
+			&& (link[i].hasAttribute("href"))
+			&& (link[i].rel.indexOf("icon") !== -1) ) {
+			icon = link[i].href;
+		}
+	}
+	
 	//console.log('sending domain "'+site[0]+'" to background...');
 	chrome.storage.sync.set(
-	  { 'site': site[1], 'domain':site[0] },
+	  { 'site': site[1], 'domain':site[0], 'icon':icon },
 	  function() {
 		// Notify that we saved.
 	});
@@ -104,6 +115,14 @@ function sweep() {
 				}
 			});
 			
+			// 1.1 give user hint about Alt+H
+			passlist[i].addEventListener('focus', function() {
+				this.parentElement.title = "PassHash (#) Press [Alt]+H";
+			} );
+			passlist[i].addEventListener('blur', function() {
+				this.parentElement.title = "";
+			} );
+			
 			// not a link! create click function for icon
 			// When icon is clicked, write the website name to local storage,
 			// NOTE: user may have multiple tabs open and they all share the extension,
@@ -141,7 +160,12 @@ function sweep() {
 					event: 'nonexisting' /* wait for programmatic close */
 				},
 				events: {
-					visible : function() { /* focus on input? */ }
+					visible : function() {
+						/* 1.1 post message -- can't reach into iframe.element.focus() per security */
+						$(iframe)[0].contentWindow.postMessage(
+							{ "refocus": true }, "*"
+						);
+					}
 				},
 				style: {
 					width: "400px",
@@ -162,8 +186,14 @@ document.body.onclick = function(e) {
 
 /**
  * Run sweep() function on DOM load
+ * 1.1 Also on every mouse click, to catch the hidden fields
  */
 $(document).ready(function() { sweep(); });
+document.body.addEventListener('click',
+	function() {
+		sweep();
+	}
+);
 
 /**
  * Listens for "insert" command from popup, and inserts argument into active password field

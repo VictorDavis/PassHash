@@ -4,7 +4,7 @@
   "name": "PassHash",
   "short_name": "passhash",
   "description": "This extension generates passwords for you based on a hash.",
-  "version": "1.0",
+  "version": "1.1",
   "icons": {
     "48": "icon48.png",
     "128": "icon128.png"
@@ -26,7 +26,7 @@
             "https://*/*"
             ],
         "js": ["jquery-1.11.1.min.js", "jquery.qtip.min.js", "contentscript.js"],
-        "css": ["jquery.qtip.css"],
+        "css": ["jquery.qtip.min.css"],
         "run_at": "document_end",
         "all_frames": true
         }

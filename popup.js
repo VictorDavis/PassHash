@@ -31,6 +31,16 @@ var pass = {
     var site = document.getElementById("hash_site").value;
 		var plaintext = site + phrase;
 		
+		// 1.1 extra special security: encourage passphrase to be longer than 10 characters
+		phrase_len = phrase.length;
+		bg = "";
+		if (phrase_len < 10) {
+			bg = "red";
+		} else {
+			bg = "black";
+		}
+		document.getElementById("hash_result").style.color = bg;
+		
 		// hash away
 		var ciphertext = SHA256(plaintext);
 		ciphertext = this.HexToBase64(ciphertext);
@@ -78,30 +88,50 @@ document.addEventListener('DOMContentLoaded', function() {
 	// retrieve website / domain ("facebook"/"facebook.com") from local storage
 	var hash_site = document.getElementById('hash_site');
 	var hash_phrase = document.getElementById('hash_phrase');
-	chrome.storage.sync.get(['site','domain'], function (result) {
+	chrome.storage.sync.get(['site','domain','icon'], function (result) {
 		//console.log(result);
 		site = result.site;
 		domain = result.domain;
+		icon = result.icon;
 		
 		// populate inputs
 		hash_site.value = site+' | ';
 		hash_site.size = site.length;
 		hash_phrase.size = 24 - site.length;
+		
+		// NONE OF THESE WORK RELIABLY
 		// https://www.google.com/s2/favicons?domain=www.[] misses github
 		// https://plus.google.com/_/favicon?domain=www.[] misses twitter
-		var iconsrc = "https://plus.google.com/_/favicon?domain="+domain;
+		// https://plus.google.com/_/favicon?domain=[] misses dropbox
+		var iconsrc = icon;
+		if (iconsrc == "") {
+			iconsrc = "http://g.etfv.co/http://www."+domain;
+		}
 		hash_site.style.backgroundImage = "url('"+iconsrc+"')";
-		hash_site.style.paddingLeft = "20px";
 		hash_site.style.backgroundRepeat = "no-repeat";
+		hash_site.style.backgroundSize = "contain";
+		hash_site.style.paddingLeft = "20px";
 	});
 	
 	document.getElementById("hash_phrase").focus();
 });
 
+/*
+ * insert on enter
+ */
 document.addEventListener('keydown', function(e) {
 	var key = e.keyCode;
 	if (key == 13) {
 		var word = document.getElementById("hash_result").innerHTML;
 		pass.insert(word);
 	}
+});
+
+/*
+ * If user enters, then exits, then enters qtip, refocus passphrase
+ * (ondomloaded is catching this, but onshow can't reach inside the iframe
+ *  to focus because of security restrictions -- use post message)
+ */
+window.addEventListener('message',function(e) {
+	document.getElementById('hash_phrase').focus();
 });
