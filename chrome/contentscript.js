@@ -36,8 +36,9 @@ function saveDomain() {
 	}
 	
 	//console.log('sending domain "'+site[0]+'" to background...');
+	var info = { 'site': site[1], 'domain':site[0], 'icon':icon };
 	chrome.storage.sync.set(
-	  { 'site': site[1], 'domain':site[0], 'icon':icon },
+	  info,
 	  function() {
 		// Notify that we saved.
 	});
@@ -53,6 +54,9 @@ function saveDomain() {
  * us to load jQuery library
  */
 function sweep() {
+	
+	// 1.2 sweep() bumps focus off active element, restore manually
+	var activeElem = document.activeElement;
 	
 	// scan all inputs for type="password" attribute
 	var inputs = document.getElementsByTagName("input");
@@ -108,7 +112,7 @@ function sweep() {
 			
 			// use Alt+H to open qtip
 			passlist[i].addEventListener('keyup', function(e) {
-				if (e.altKey & (e.keyCode == 72)) {
+				if (e.altKey & (e.keyCode == 72)) { /* alt+h */
 					activePass = this;
 					saveDomain();
 					this.parentElement.getElementsByTagName("img")[0].click();
@@ -160,11 +164,17 @@ function sweep() {
 					event: 'nonexisting' /* wait for programmatic close */
 				},
 				events: {
+					/* 1.1 post message -- can't reach into iframe.element.focus() per security */
 					visible : function() {
-						/* 1.1 post message -- can't reach into iframe.element.focus() per security */
 						$(iframe)[0].contentWindow.postMessage(
-							{ "refocus": true }, "*"
+							{ "visible": true }, "*"
 						);
+					},
+					hidden : function() {
+						$(iframe)[0].contentWindow.postMessage(
+							{ "hidden": true }, "*"
+						);
+						$(window.activePass).focus();
 					}
 				},
 				style: {
@@ -175,6 +185,9 @@ function sweep() {
 			});
 		}
 	}
+	
+	// 1.2 restore focus to active element
+	activeElem.focus();
 }
 
 /**
@@ -183,6 +196,54 @@ function sweep() {
 document.body.onclick = function(e) {
 	$('.passhash').qtip("hide");
 }
+
+/**
+ * 1.2
+ * Modified code from "typetype" plugin, inserts text into input one character at
+ * a time using a recursive queued callback, which magically works for apple.com
+ * 
+ * https://github.com/iamdanfox/typetype
+ */
+$.fn.extend({
+	typetype: function(txt, options) {
+		var settings;
+		
+		settings = $.extend({
+			callback: function() {}, /* runs after text insert */
+			keypress: function() {}  /* runs after each keystroke */
+		}, options);
+		
+		return this.each(function() {
+			var elem;
+			
+			// this is necessary, can't just find/replace elem with "this"
+			elem = this;
+			
+			return $(elem).queue(function() {
+				var typeTo;
+				
+				typeTo = function(i) {
+					
+					if (i <= txt.length) {
+						elem.value += txt[i - 1];
+						settings.keypress.call(elem);
+						
+						setTimeout((function() {
+							return typeTo(i + 1);
+						}), 0);
+						
+					} else {
+						settings.callback.call(elem);
+						$(elem).dequeue();
+					}
+					
+				};
+				
+				return typeTo(1);
+			});
+		});
+	}
+});
 
 /**
  * Run sweep() function on DOM load
@@ -195,18 +256,95 @@ document.body.addEventListener('click',
 	}
 );
 
+/*
+ * 1.2 Can't believe I have to do this, argh.
+ * Some password fields have a "placeholder" attribute that disappears automatically
+ * when user enters text (correct). Others have a "label for" whose visibility the site
+ * controls via script (incorrect). Can't disappear "label for" automatically because
+ * yet other sites use it (correctly) as an actual label. Disappear it *only* if it
+ * physically overlaps the password field. TODO: find a way to fool the scripts
+ * ex: disappear on apple & dropbox, leave on facebook & github & coursera
+ */
+function overlapping(a, b) {
+	var ret = false;
+	var aoff = a.offset();
+	var boff = b.offset();
+	
+	// lefts match, tops match within +/- 5px
+	if ( (aoff.left == boff.left)
+		&& (aoff.top - boff.top < 5) 
+		&& (boff.top - aoff.top < 5) ) {
+		ret = true;
+	}
+	
+	// run same test on children -- recursive
+	if (b.children().length > 0) {
+		ret = ret || overlapping(a, b.children(":first"));
+	}
+	
+	return ret;
+}
+
 /**
  * Listens for "insert" command from popup, and inserts argument into active password field
  */
 chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
+	
+	/**
+	 * weird bug on ebay -- content script runs once per iframe on the page,
+	 * so insert() sends once, but onMessage receives twice, only once with 
+	 * access to window.activePass
+	 */
+	if (window.activePass == null) {
+		console.log({'content script running in iframe, src = ': document.URL});
+		return;
+	}
+	
+	// sent from popup pass.insert()
   if (msg.action == 'insert_text') {
-		activePass.value = msg.pass;
+		/** 1.2 get rid of "label for" placeholder (apple, dropbox)
+		 * CAREFUL! Some websites use "label for" the *right* way, as a *label*
+		 * that says "Password:" not as a *placeholder* -- to distinguish,
+		 * placeholder's offset().left is the same as the field itself
+		 * ex: dropbox has <label>password
+		 * ex: but apple has <label><span>password
+		 * So check children's offset too! argh ><
+		 */
+		var label = document.getElementsByTagName("label");
+		for (var i = 0; i < label.length; i++) {
+			if ( (label[i].hasAttribute("for"))
+				&& (label[i].attributes.for.value == activePass.id)
+			  && ( overlapping($(window.activePass), $(label[i])) ) ) {
+				label[i].remove();
+			}
+		}
 		
 		// disappear qtip after insert
-		$('.passhash').qtip("hide");
-		activePass.focus();
+		//$('.passhash').qtip("hide");
+		$(activePass).focus();
+		$(activePass).val('');
+		
+		/**
+		 * 1,2 asynchronous call to modified typetype, yields neat effect
+		 * of human typing, but more than that, this hodgepodge of calls
+		 * actually fixes apple.com bug where validator doesn't trigger
+		 */
+		$(activePass).typetype(msg.pass, {
+			callback: function() {
+				// apple.com after inserting text, the password validator
+				// does not get triggered until you do all this mess
+				this.blur();
+				this.focus();
+				
+				// make sure to hide qtip *last* -- its callback restores focus
+				// to active password field
+				$('.passhash').qtip("hide");
+			}
+		});
 		
   } else if (msg.action == 'sweep') {
 		sweep();
+	} else if (msg.action == 'close') {
+		$('.passhash').qtip("hide");
 	}
 });

@@ -18,13 +18,21 @@
 			background-color: white;
 			color: black;
 		}
-		#din input:first-child{
+		#din img {
+			vertical-align: middle;
+		}
+		#hash_site{
 			border-width: 1px 0 1px 1px;
 			text-align: right;
 		}
-		#din input:last-child{
+		#hash_phrase{
 			border-width: 1px 1px 1px 0; 
-			margin-left:-12px;
+			margin-left: -12px;
+			margin-right: 0px;
+		}
+		#showhide {
+			margin-left: -5px;
+			display: none;
 		}
 		a{
 			text-decoration: none;
@@ -40,7 +48,8 @@
 		<div id="din">
 			<!-- two inputs styled to look like one -->
 			<input type="text" id="hash_site" disabled>
-			<input type="text" id="hash_phrase" placeholder="Enter Passphrase...">
+			<input type="password" id="hash_phrase" placeholder="Enter Passphrase...">
+			<img id="showhide" title="Show Passphrase" src="show20.png" height=20>
 		</div>
 		<div style="text-align:center">
 			<!-- clickable text instead of "insert" button -->
