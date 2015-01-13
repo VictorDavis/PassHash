@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// populate inputs
 		hash_site.value = site+' | ';
 		hash_site.size = site.length;
-		hash_phrase.size = 24 - site.length;
+		hash_phrase.size = 23 - site.length;
 		
 		// NONE OF THESE WORK RELIABLY
 		// https://www.google.com/s2/favicons?domain=www.[] misses github

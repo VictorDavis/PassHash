@@ -28,3 +28,10 @@ Change Log
 - [Esc] key closes qtip. Beware of control flow problem! Qtip.hide() was calling popup.init(), leaving password field without focus. The *last* thing to be done in any series of callbacks is to hide the qtip, and let its callback function restore focus to the password field. {'contentscript.js'}  
 
 - Changed message relay to relay whole message, no logic inside. It just receives a "request" object from popup.js and passes it down to contentscript.js. {'background.js'}  
+
+### Version 1.3
+#### 2015-01-12
+
+- Added tab key to list of triggers for sweep(). An uniconified field could appear, and user will naturally either click on it or tab into it to enter a password. Either should trigger sweep() to iconify. Still looking for a more satisfactory solution here, without running a looping background monitor. {'contentscript.js'}  
+
+- Changed text length from 24 to 23 b/c of Windows bug pushing icon to next line. {'popup.js'}  
