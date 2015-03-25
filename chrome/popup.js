@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// https://plus.google.com/_/favicon?domain=www.[] misses twitter
 		// https://plus.google.com/_/favicon?domain=[] misses dropbox
 		if (icon == "") {
-			icon = "http://g.etfv.co/http://www."+domain;
+			icon = "http://g.etfv.co/http://www."+domain+"&origin=passhash.com";
 		}
 		hash_site.style.backgroundImage = "url('"+icon+"')";
 		hash_site.style.backgroundRepeat = "no-repeat";
