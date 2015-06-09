@@ -160,8 +160,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		// https://www.google.com/s2/favicons?domain=www.[] misses github
 		// https://plus.google.com/_/favicon?domain=www.[] misses twitter
 		// https://plus.google.com/_/favicon?domain=[] misses dropbox
+		// http://g.etfv.co/http://www.[] appears to be defunct
 		if (icon == "") {
-			icon = "http://g.etfv.co/http://www."+domain+"&origin=passhash.com";
+			icon = "http://www.google.com/s2/favicons?domain=http://www."+domain;
 		}
 		hash_site.style.backgroundImage = "url('"+icon+"')";
 		hash_site.style.backgroundRepeat = "no-repeat";
