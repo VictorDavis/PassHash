@@ -35,3 +35,8 @@ Change Log
 - Added tab key to list of triggers for sweep(). An uniconified field could appear, and user will naturally either click on it or tab into it to enter a password. Either should trigger sweep() to iconify. Still looking for a more satisfactory solution here, without running a looping background monitor. {'contentscript.js'}  
 
 - Changed text length from 24 to 23 b/c of Windows bug pushing icon to next line. {'popup.js'}  
+
+###Version 1.6
+####2015-06-22
+
+- Refactored code such that chrome extension files could be used by a simple index.html file so I can host a pass-hash.com website without any repeated code. 

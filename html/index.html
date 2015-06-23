@@ -1,0 +1,49 @@
+
+<html>
+<head>
+<title>PassHash</title>
+<script src="../chrome/jquery-1.11.1.min.js"></script>
+<script src="../chrome/jquery.qtip.min.js"></script>
+<link rel="stylesheet" type="text/css" href="../chrome/jquery.qtip.min.css"></link>
+<link rel="stylesheet" type="text/css" href="main.css"></link>
+<script src="../chrome/contentscript.js"></script>
+<script src="../chrome/sha256.js"></script>
+<style>
+.wrapper {
+	text-align:center;
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+<input type="password" size="34">
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<iframe width="600" height="400" src="http://www.youtube.com/embed/4NxS-SU_6zw">
+</iframe>
+</div>
+</body>
+<script>
+var chrome = [];
+chrome.extension = [];
+chrome.extension.getURL = function(filename) {
+	return '../chrome/'+filename;
+}
+chrome.extension.onMessage = []
+chrome.extension.onMessage.addListener = function(x) {}
+
+chrome.extension.sendMessage = function(x) { alert(x); };
+
+chrome.storage = [];
+chrome.storage.sync = [];
+chrome.storage.sync.set = function(x) {};
+chrome.storage.sync.get = function(x) {};
+
+html = true;
+</script>
+</html>

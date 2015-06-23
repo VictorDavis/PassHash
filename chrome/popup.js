@@ -29,10 +29,10 @@ var pass = {
 		// get phrase & site
     var phrase = document.getElementById("hash_phrase").value;
     var site = document.getElementById("hash_site").value;
-		var plaintext = site + phrase;
+		var plaintext = site + ' | ' + phrase;
 		
 		// 1.2 don't do any work if the field is empty
-		if (phrase.length > 0) {
+		if ((phrase.length > 0) | (site.length > 0)) {
 			// show show/hide icon
 			document.getElementById('showhide').style.display = 'inline';
 		
@@ -68,7 +68,10 @@ var pass = {
   insert: function(word) {
 		var msg = { action: 'insert_text', pass: word };
 		if (word.length > 0) {
-			chrome.extension.sendMessage(msg, function(response){});
+			if (chrome.extension)
+				chrome.extension.sendMessage(msg, function(response){});
+			else
+				window.prompt("Copy to clipboard: Ctrl+C, Enter", word);
 		}
 	},
 
@@ -95,7 +98,10 @@ var pass = {
 		
 		if (which == 'visible') {
 			document.addEventListener('keydown', pass.listen);
-			document.getElementById('hash_phrase').focus();
+			if (document.getElementById('hash_site').disabled)
+				document.getElementById('hash_phrase').focus();
+			else
+				document.getElementById('hash_site').focus();
 		} else {
 			// 1.2 remove listeners!
 			document.removeEventListener('keydown', pass.listen);
@@ -115,13 +121,49 @@ var pass = {
 			pass.toggle();
 		} else if (key == 27) { /* esc */
 			// 1.2 tell content script to close qtip
-			chrome.extension.sendMessage(
-				{ action: 'close' },
-				function(response){}
-			);
+			if (chrome.extension) {
+				chrome.extension.sendMessage(
+					{ action: 'close' },
+					function(response){}
+				);
+			}
 		}
 	}
 };
+
+fill_site = function (result) {
+	var hash_site = document.getElementById('hash_site');
+	var hash_phrase = document.getElementById('hash_phrase');
+	var hash_pipe = document.getElementById('hash_pipe');
+
+	//console.log(result);
+	site = result.site;
+	domain = result.domain;
+	icon = result.icon;
+
+	// populate inputs
+	if (result.site) {
+		hash_site.value = site;
+		hash_site.size = site.length;
+		hash_phrase.size = 22 - site.length;
+	} else {
+		hash_site.size = 8;
+		hash_phrase.size = 14;
+	}
+
+	// NONE OF THESE WORK RELIABLY
+	// https://www.google.com/s2/favicons?domain=www.[] misses github
+	// https://plus.google.com/_/favicon?domain=www.[] misses twitter
+	// https://plus.google.com/_/favicon?domain=[] misses dropbox
+	// http://g.etfv.co/http://www.[] appears to be defunct
+	if (icon == "") {
+		icon = "http://www.google.com/s2/favicons?domain=http://www."+domain;
+	}
+	hash_site.style.backgroundImage = "url('"+icon+"')";
+	hash_site.style.backgroundRepeat = "no-repeat";
+	hash_site.style.backgroundSize = "contain";
+	hash_site.style.paddingLeft = "20px";
+}
 
 /**
  * On load, add listeners
@@ -134,6 +176,16 @@ document.addEventListener('DOMContentLoaded', function() {
 	hash_click.addEventListener('keyup', function() {
 		pass.hash();
 	});
+	var hash_site = document.getElementById('hash_site');
+	hash_site.addEventListener('keyup', function() {
+		pass.hash();
+	});
+
+	// tab out of site triggers icon lookup
+	hash_site.addEventListener('blur', function() {
+		var info = { 'site': this.value, 'domain':this.value + '.com', 'icon':'' };
+		fill_site(info);
+	});
 
 	// make the result text clickable, click to insert, again, saving a button
 	var hash_insert = document.getElementById('hash_insert');
@@ -143,32 +195,13 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	
 	// retrieve website / domain ("facebook"/"facebook.com") from local storage
-	var hash_site = document.getElementById('hash_site');
-	var hash_phrase = document.getElementById('hash_phrase');
-	chrome.storage.sync.get(['site','domain','icon'], function (result) {
-		//console.log(result);
-		site = result.site;
-		domain = result.domain;
-		icon = result.icon;
-		
-		// populate inputs
-		hash_site.value = site+' | ';
-		hash_site.size = site.length;
-		hash_phrase.size = 23 - site.length;
-		
-		// NONE OF THESE WORK RELIABLY
-		// https://www.google.com/s2/favicons?domain=www.[] misses github
-		// https://plus.google.com/_/favicon?domain=www.[] misses twitter
-		// https://plus.google.com/_/favicon?domain=[] misses dropbox
-		// http://g.etfv.co/http://www.[] appears to be defunct
-		if (icon == "") {
-			icon = "http://www.google.com/s2/favicons?domain=http://www."+domain;
-		}
-		hash_site.style.backgroundImage = "url('"+icon+"')";
-		hash_site.style.backgroundRepeat = "no-repeat";
-		hash_site.style.backgroundSize = "contain";
-		hash_site.style.paddingLeft = "20px";
-	});
+	if (chrome.storage) {
+		chrome.storage.sync.get(['site','domain','icon'], fill_site);
+	} else {
+		var info = { 'site': '', 'domain':'', 'icon':'' };
+		fill_site(info);
+		hash_site.removeAttribute("disabled");
+	}
 
 	/**
 	* Show/hide password toggle

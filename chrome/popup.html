@@ -24,11 +24,18 @@
 		#hash_site{
 			border-width: 1px 0 1px 1px;
 			text-align: right;
+			padding-right:2px;
 		}
 		#hash_phrase{
 			border-width: 1px 1px 1px 0; 
 			margin-left: -12px;
 			margin-right: 0px;
+		}
+		#hash_pipe{
+			border-width: 1px 1px 1px 0; 
+			margin-left: -12px;
+			margin-right: 0px;
+			text-align: center;
 		}
 		#showhide {
 			margin-left: -5px;
@@ -47,7 +54,8 @@
   <body>
 		<div id="din">
 			<!-- two inputs styled to look like one -->
-			<input type="text" id="hash_site" disabled>
+			<input type="text" id="hash_site" disabled placeholder="Enter Site...">
+			<input type="text" id="hash_pipe" value=" | " size="1" disabled>
 			<input type="password" id="hash_phrase" placeholder="Enter Passphrase...">
 			<img id="showhide" title="Show Passphrase" src="show20.png" height=20>
 		</div>

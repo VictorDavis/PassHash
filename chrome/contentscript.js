@@ -14,6 +14,7 @@
  * will be inserted. Bad form. Change this later.
  */
 activePass = null;
+html = false;
 
 /*
  * extracts simple domain name, ignoring .com, .net, and subdomains www. etc
@@ -23,6 +24,7 @@ function saveDomain() {
 	
 	// ex facebook google homedepot, and write to background local storage
 	var site = document.domain.toLowerCase().match("([a-z]*)\.[a-z]*$");
+	if (!site) site = [];
 	
 	// get icon too (those favicon services just don't work
 	icon = "";
@@ -191,13 +193,6 @@ function sweep() {
 }
 
 /**
- * Close tooltip if user clicks out of it, (self-collapsing window)
- */
-document.body.onclick = function(e) {
-	$('.passhash').qtip("hide");
-}
-
-/**
  * 1.2
  * Modified code from "typetype" plugin, inserts text into input one character at
  * a time using a recursive queued callback, which magically works for apple.com
@@ -249,12 +244,79 @@ $.fn.extend({
  * Run sweep() function on DOM load
  * 1.1 Also on every mouse click, to catch the hidden fields
  */
-$(document).ready(function() { sweep(); });
-document.body.addEventListener('click',
-	function() {
-		sweep();
-	}
-);
+$(document).ready(function() {
+	sweep();
+	document.body.addEventListener('click',
+		function() {
+			sweep();
+		}
+	);
+
+	document.body.onclick = function(e) {
+		if (!html) $('.passhash').qtip("hide");
+	};
+	chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
+	
+		/**
+		 * weird bug on ebay -- content script runs once per iframe on the page,
+		 * so insert() sends once, but onMessage receives twice, only once with 
+		 * access to window.activePass
+		 */
+		if (window.activePass == null) {
+			console.log({'content script running in iframe, src = ': document.URL});
+			return;
+		}
+	
+		// sent from popup pass.insert()
+	  if (msg.action == 'insert_text') {
+			/** 1.2 get rid of "label for" placeholder (apple, dropbox)
+			 * CAREFUL! Some websites use "label for" the *right* way, as a *label*
+			 * that says "Password:" not as a *placeholder* -- to distinguish,
+			 * placeholder's offset().left is the same as the field itself
+			 * ex: dropbox has <label>password
+			 * ex: but apple has <label><span>password
+			 * So check children's offset too! argh ><
+			 */
+			var label = document.getElementsByTagName("label");
+			for (var i = 0; i < label.length; i++) {
+				if ( (label[i].hasAttribute("for"))
+					&& (label[i].attributes.for.value == activePass.id)
+				  && ( overlapping($(window.activePass), $(label[i])) ) ) {
+					label[i].remove();
+				}
+			}
+		
+			// disappear qtip after insert
+			//if (!html) $('.passhash').qtip("hide");
+			$(activePass).focus();
+			$(activePass).val('');
+		
+			/**
+			 * 1,2 asynchronous call to modified typetype, yields neat effect
+			 * of human typing, but more than that, this hodgepodge of calls
+			 * actually fixes apple.com bug where validator doesn't trigger
+			 */
+			$(activePass).typetype(msg.pass, {
+				callback: function() {
+					// apple.com after inserting text, the password validator
+					// does not get triggered until you do all this mess
+					this.blur();
+					this.focus();
+				
+					// make sure to hide qtip *last* -- its callback restores focus
+					// to active password field
+					if (!html) $('.passhash').qtip("hide");
+				}
+			});
+		
+	  } else if (msg.action == 'sweep') {
+			sweep();
+		} else if (msg.action == 'close') {
+			if (!html) $('.passhash').qtip("hide");
+		}
+	});
+	if (html) document.getElementsByTagName("img")[0].click();
+});
 
 /*
  * 1.2 Can't believe I have to do this, argh.
@@ -288,63 +350,3 @@ function overlapping(a, b) {
 /**
  * Listens for "insert" command from popup, and inserts argument into active password field
  */
-chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
-	
-	/**
-	 * weird bug on ebay -- content script runs once per iframe on the page,
-	 * so insert() sends once, but onMessage receives twice, only once with 
-	 * access to window.activePass
-	 */
-	if (window.activePass == null) {
-		console.log({'content script running in iframe, src = ': document.URL});
-		return;
-	}
-	
-	// sent from popup pass.insert()
-  if (msg.action == 'insert_text') {
-		/** 1.2 get rid of "label for" placeholder (apple, dropbox)
-		 * CAREFUL! Some websites use "label for" the *right* way, as a *label*
-		 * that says "Password:" not as a *placeholder* -- to distinguish,
-		 * placeholder's offset().left is the same as the field itself
-		 * ex: dropbox has <label>password
-		 * ex: but apple has <label><span>password
-		 * So check children's offset too! argh ><
-		 */
-		var label = document.getElementsByTagName("label");
-		for (var i = 0; i < label.length; i++) {
-			if ( (label[i].hasAttribute("for"))
-				&& (label[i].attributes.for.value == activePass.id)
-			  && ( overlapping($(window.activePass), $(label[i])) ) ) {
-				label[i].remove();
-			}
-		}
-		
-		// disappear qtip after insert
-		//$('.passhash').qtip("hide");
-		$(activePass).focus();
-		$(activePass).val('');
-		
-		/**
-		 * 1,2 asynchronous call to modified typetype, yields neat effect
-		 * of human typing, but more than that, this hodgepodge of calls
-		 * actually fixes apple.com bug where validator doesn't trigger
-		 */
-		$(activePass).typetype(msg.pass, {
-			callback: function() {
-				// apple.com after inserting text, the password validator
-				// does not get triggered until you do all this mess
-				this.blur();
-				this.focus();
-				
-				// make sure to hide qtip *last* -- its callback restores focus
-				// to active password field
-				$('.passhash').qtip("hide");
-			}
-		});
-		
-  } else if (msg.action == 'sweep') {
-		sweep();
-	} else if (msg.action == 'close') {
-		$('.passhash').qtip("hide");
-	}
-});
