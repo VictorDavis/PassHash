@@ -68,7 +68,7 @@ var pass = {
   insert: function(word) {
 		var msg = { action: 'insert_text', pass: word };
 		if (word.length > 0) {
-			if (chrome.extension)
+			if ((typeof(chrome) != "undefined") && (typeof(chrome.extension) != "undefined"))
 				chrome.extension.sendMessage(msg, function(response){});
 			else
 				window.prompt("Copy to clipboard: Ctrl+C, Enter", word);
@@ -121,7 +121,7 @@ var pass = {
 			pass.toggle();
 		} else if (key == 27) { /* esc */
 			// 1.2 tell content script to close qtip
-			if (chrome.extension) {
+			if ((typeof(chrome) != "undefined") && (typeof(chrome.extension) != "undefined")) {
 				chrome.extension.sendMessage(
 					{ action: 'close' },
 					function(response){}
@@ -145,10 +145,10 @@ fill_site = function (result) {
 	if (result.site) {
 		hash_site.value = site;
 		hash_site.size = site.length;
-		hash_phrase.size = 22 - site.length;
+		hash_phrase.size = 19 - site.length;
 	} else {
 		hash_site.size = 8;
-		hash_phrase.size = 14;
+		hash_phrase.size = 11;
 	}
 
 	// NONE OF THESE WORK RELIABLY
@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	
 	// retrieve website / domain ("facebook"/"facebook.com") from local storage
-	if (chrome.storage) {
+	if ((typeof(chrome) != "undefined") && (typeof(chrome.storage) != "undefined")) {
 		chrome.storage.sync.get(['site','domain','icon'], fill_site);
 	} else {
 		var info = { 'site': '', 'domain':'', 'icon':'' };
